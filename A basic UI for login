@@ -1,94 +1,52 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login and Signup</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f2f2f2;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .container {
-      display: flex;
-      gap: 50px;
-    }
-    .form-box {
-      background: white;
-      padding: 30px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-    }
-    button {
-      padding: 10px 20px;
-      background-color: magenta;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="form-box">
-      <h2>Login</h2>
-      <label for="username">Username:</label>
-      <input type="text" id="username">
-      <label for="password">Password:</label>
-      <input type="password" id="password">
-      <button onclick="submitForm()">Login</button>
-    </div>
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import sqlite3
 
-    <div class="form-box">
-      <h2>Signup</h2>
-      <label for="new-username">Username:</label>
-      <input type="text" id="new-username">
-      <label for="new-password">Password:</label>
-      <input type="password" id="new-password">
-      <button onclick="submitSignup()">Signup</button>
-    </div>
-  </div>
+app = Flask(__name__)
+CORS(app)
 
-  <script>
-    async function submitForm() {
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
+# Database setup
+def init_db():
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('CREATE TABLE IF NOT EXISTS users (username TEXT, password TEXT)')
+    conn.commit()
+    conn.close()
 
-      const res = await fetch('http://127.0.0.1:5000/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
+init_db()
 
-      const data = await res.json();
-      alert(data.message);
-    }
+@app.route('/signup', methods=['POST'])
+def signup():
+    data = request.json
+    username = data['username']
+    password = data['password']
 
-    async function submitSignup() {
-      const username = document.getElementById('new-username').value;
-      const password = document.getElementById('new-password').value;
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('SELECT * FROM users WHERE username = ?', (username,))
+    if c.fetchone():
+        return jsonify({"message": "User already exists"}), 400
 
-      const res = await fetch('http://127.0.0.1:5000/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
+    c.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, password))
+    conn.commit()
+    conn.close()
+    return jsonify({"message": "User created successfully"})
 
-      const data = await res.json();
-      alert(data.message);
-    }
-  </script>
-</body>
-</html>
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    username = data['username']
+    password = data['password']
+
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('SELECT * FROM users WHERE username = ? AND password = ?', (username, password))
+    if c.fetchone():
+        return jsonify({"message": "Login successful"})
+    return jsonify({"message": "Invalid credentials"}), 401
+
+if __name__ == '__main__':
+    app.run(debug=True)
 
 
 </body>
