@@ -9,10 +9,37 @@ CORS(app)
 def init_db():
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    c.execute('CREATE TABLE IF NOT EXISTS users (username TEXT, password TEXT)')
+
+    # Create users table
+    c.execute('''CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL
+    )''')
+
+    # Create products table
+    c.execute('''CREATE TABLE IF NOT EXISTS products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        price REAL NOT NULL,
+        stock INTEGER DEFAULT 0
+    )''')
+
+    # Insert sample products only if table is empty
+    c.execute('SELECT COUNT(*) FROM products')
+    if c.fetchone()[0] == 0:
+        sample_products = [
+            ("Apple", 1.50, 100),
+            ("Banana", 0.99, 120),
+            ("Orange", 2.00, 90),
+            ("Mango", 3.25, 50),
+            ("Grapes", 2.50, 60)
+        ]
+        c.executemany('INSERT INTO products (name, price, stock) VALUES (?, ?, ?)', sample_products)
+        print("✅ Sample products inserted.")
+
     conn.commit()
     conn.close()
-
 init_db()
 
 @app.route('/signup', methods=['POST'])
@@ -45,8 +72,23 @@ def login():
         return jsonify({"message": "Login successful"})
     return jsonify({"message": "Invalid credentials"}), 401
 
+@app.route('/products', methods=['GET'])
+def get_products():
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('SELECT id, name, price, stock FROM products')
+    rows = c.fetchall()
+    conn.close()
+
+    products = [
+        {"id": row[0], "name": row[1], "price": row[2], "stock": row[3]}
+        for row in rows
+    ]
+    return jsonify(products)
+
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
 </body>
