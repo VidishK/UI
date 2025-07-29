@@ -1,11 +1,10 @@
 import sqlite3
 
-# Connect (or create) the database
-conn = sqlite3.connect('users.db')
-cursor = conn.cursor()
+conn = sqlite3.connect("users.db")
+c = conn.cursor()
 
-# Create a table called 'users'
-cursor.execute('''
+# Create users table
+c.execute('''
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
@@ -13,8 +12,31 @@ CREATE TABLE IF NOT EXISTS users (
 )
 ''')
 
-# Save changes and close
+# Create products table
+c.execute('''
+CREATE TABLE IF NOT EXISTS products (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    price REAL NOT NULL,
+    stock INTEGER DEFAULT 0
+)
+''')
+
+# Insert sample products if table is empty
+c.execute('SELECT COUNT(*) FROM products')
+if c.fetchone()[0] == 0:
+    sample_products = [
+        ("Apple", 1.50, 100),
+        ("Banana", 0.99, 120),
+        ("Orange", 2.00, 90),
+        ("Mango", 3.25, 50),
+        ("Grapes", 2.50, 60)
+    ]
+    c.executemany('INSERT INTO products (name, price, stock) VALUES (?, ?, ?)', sample_products)
+    print("✅ Sample products inserted.")
+
+# Commit and close
 conn.commit()
 conn.close()
 
-print("Database and table created successfully.")
+print("✅ Database and tables created successfully.")
