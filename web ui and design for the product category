@@ -34,10 +34,17 @@
   </style>
 </head>
 <body>
+  <h2 id="welcome-user">Welcome!</h2>
   <h1>Product List <span id="cart-count">(Cart: 0)</span></h1>
   <div id="products"></div>
 
   <script>
+    // Show username
+    const user = localStorage.getItem('username');
+    if (user) {
+      document.getElementById('welcome-user').innerText = `Welcome, ${user}!`;
+    }
+
     async function fetchProducts() {
       const res = await fetch('http://127.0.0.1:5000/products');
       const products = await res.json();
@@ -51,7 +58,7 @@
           <h3>${product.name}</h3>
           <p>Price: $${product.price}</p>
           <p>Stock: ${product.stock}</p>
-          <button onclick="addToCart(${product.id}, '${product.name}')">Add to Cart</button>
+          <button onclick='addToCart(${product.id}, ${JSON.stringify(product.name)})'>Add to Cart</button>
         `;
         container.appendChild(div);
       });
@@ -74,22 +81,3 @@
   </script>
 </body>
 </html>
-
-
-@app.route('/products', methods=['GET'])
-def get_products():
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-    c.execute('SELECT id, name, price, stock FROM products')
-    rows = c.fetchall()
-    conn.close()
-
-    products = [
-        {"id": row[0], "name": row[1], "price": row[2], "stock": row[3]}
-        for row in rows
-    ]
-    return jsonify(products)
-
-if __name__ == '__main__':
-    app.run(debug=True)
-
